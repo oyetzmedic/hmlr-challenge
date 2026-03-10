@@ -1,0 +1,11 @@
+# Core dependencies
+PyMuPDF>=1.24.0
+pytesseract>=0.3.10
+Pillow>=10.0.0
+
+# NLP / zero-shot classification
+transformers>=4.38.0
+torch>=2.2.0
+
+# Dev / testing
+pytest>=8.0.0

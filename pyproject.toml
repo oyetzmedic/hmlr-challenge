@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "hmlr-planning-pipeline"
+version = "1.1.0"  # bumped version for new features
+description = "Classify planning decision notice PDF pages and extract application numbers and applicant names"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "PyMuPDF>=1.24.0",
+    "pytesseract>=0.3.10",
+    "Pillow>=10.0.0",
+    "transformers>=4.38.0",
+    "torch>=2.2.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0.0"]
+ner = ["spacy>=3.7.0"]
+
+[project.scripts]
+hmlr-pipeline = "src.pipeline:main"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
