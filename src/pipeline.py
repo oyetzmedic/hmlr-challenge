@@ -43,7 +43,7 @@ import subprocess
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import Iterator
+
 
 # ---------------------------------------------------------------------------
 # Document category labels
@@ -133,6 +133,9 @@ _APPLICANT_ANCHOR = re.compile(
     r"(?:Applicant|granted\s+to|approval\s+granted\s+to)\s*[:\.]?\s*(.{3,80})",
     re.IGNORECASE,
 )
+
+# Date-like strings to exclude from application number results (e.g. 17/07/2000)
+_DATE_LIKE = re.compile(r"/(?:19|20)\d{2}$")
 
 # ---------------------------------------------------------------------------
 # Data model
@@ -225,7 +228,6 @@ def ocr_image(image: object) -> str:
 
     Uses ``--oem 3 --psm 6`` for full-page OCR with the LSTM engine.
     """
-    check_tesseract_available()
     try:
         import pytesseract
     except ImportError as exc:
@@ -338,7 +340,6 @@ def extract_application_numbers(text: str) -> list[str]:
     # Exclude date-like strings: DD/MM/YYYY or similar where the last section
     # is a four-digit year (e.g. "17/07/2000"). Planning references use two-
     # digit year sections and do not have four-digit final segments.
-    _DATE_LIKE = re.compile(r"/(?:19|20)\d{2}$")
     filtered = [c for c in filtered if not _DATE_LIKE.search(c)]
 
     return sorted(filtered)
@@ -385,8 +386,9 @@ def extract_applicant_names(text: str, use_ner: bool = False) -> list[str]:
                     cleaned = _normalise(ent.text)
                     if cleaned not in candidates:
                         candidates.add(cleaned)
-        except ImportError:
-            # Silently ignore if spacy not installed
+        except (ImportError, OSError):
+            # ImportError: spaCy not installed
+            # OSError: spaCy installed but en_core_web_sm model not downloaded
             pass
 
     # Remove obvious false positives from boilerplate
@@ -470,13 +472,20 @@ def analyse_pdf(
     """
     images = render_pdf_pages(pdf_path, dpi=dpi)
 
+    # Check Tesseract once before spinning up workers
+    check_tesseract_available()
+
     # OCR in parallel if workers > 1
-    texts: list[str] = [None] * len(images)  # type: ignore
+    texts: list[str] = [""] * len(images)
     with ThreadPoolExecutor(max_workers=workers) as executor:
         future_to_idx = {executor.submit(ocr_image, img): i for i, img in enumerate(images)}
         for future in as_completed(future_to_idx):
             idx = future_to_idx[future]
-            texts[idx] = future.result()
+            try:
+                texts[idx] = future.result()
+            except Exception as e:  # noqa: BLE001
+                print(f"[WARNING] OCR failed on page {idx + 1}: {e}. Using empty text.")
+                texts[idx] = ""
 
     zsp = None
     if use_transformer:
