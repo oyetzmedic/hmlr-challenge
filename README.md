@@ -1,4 +1,5 @@
 # HM Land Registry – Data Science Technical Test
+[![Tests](https://github.com/oyetzmedic/hmlr-challenge/actions/workflows/tests.yml/badge.svg)](https://github.com/oyetzmedic/hmlr-challenge/actions/workflows/tests.yml)
 
 A reproducible pipeline for classifying historical planning-decision PDF pages and extracting key entities.
 
