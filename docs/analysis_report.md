@@ -25,15 +25,16 @@ The four-page sample document exhibits characteristics typical of historical lan
 
 A single **NLP-first OCR pipeline** (one approach as required):
 
-1. **PDF rendering** – PyMuPDF renders each page to a 250 DPI image, improving OCR on degraded scans.
-2. **OCR** – Tesseract (LSTM engine, `--psm 6`) extracts raw text.
-3. **Page classification** – A zero-shot transformer (`facebook/bart-large-mnli`) classifies each page's text against four human-readable category descriptions. A deterministic keyword-scoring fallback is available for offline or resource-constrained environments (`--no-transformer`).
+1. **PDF rendering** – PyMuPDF renders each page to a configurable DPI image, improving OCR on degraded scans.
+2. **OCR** – Tesseract (LSTM engine, `--psm 6`) extracts raw text; parallel processing available (`--workers`).
+3. **Page classification** – A zero-shot transformer (configurable model, default `facebook/bart-large-mnli`) classifies each page's text against four human-readable category descriptions. A deterministic keyword-scoring fallback is available for offline or resource-constrained environments (`--no-transformer`).
 4. **Entity extraction** – Regex patterns extract:
    - Application numbers (slash-delimited planning references, labelled or bare).
    - Applicant names (title-led personal names via `Mr/Mrs/Ms/Dr`; company suffix patterns for `Ltd/Limited/PLC`), guided by anchor phrases (`Applicant:`, `granted to`).
+   - Optional NER enhancement (`--use-ner`) adds person/organisation entities from spaCy.
 5. **Output** – Per-page results are written to CSV and JSON.
 
-**Rationale**: No labelled training set is available. Zero-shot classification removes the need to hand-code all category rules while remaining interpretable and easy to audit. Regex extraction is highly reliable for the constrained planning-reference format and well-anchored name fields.
+**Rationale**: No labelled training set is available. Zero-shot classification removes the need to hand-code all category rules while remaining interpretable and easy to audit. Regex extraction is highly reliable for the constrained planning-reference format and well-anchored name fields. The optional NER feature demonstrates a path to improved recall on complex name layouts.
 
 ---
 
